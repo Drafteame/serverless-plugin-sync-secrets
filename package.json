@@ -1,0 +1,43 @@
+{
+  "name": "serverless-plugin-sync-secrets",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Serverless plugin to sync secrets from AWS Secrets Manager to environment variables",
+  "main": "index.js",
+  "scripts": {
+    "test": "FORCE_COLOR=0 mocha tests --recursive",
+    "lint": "npx eslint --fix .",
+    "format": "npx prettier --write .",
+    "precommit": "pre-commit install && pre-commit install --hook-type commit-msg"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drafteame/serverless-plugin-sync-secrets.git"
+  },
+  "keywords": [
+    "serverless",
+    "plugin",
+    "secrets",
+    "sync-secrets",
+    "secrets-manager"
+  ],
+  "author": "Eduardo Aguilar <dante.aguilar41@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Drafteame/serverless-plugin-sync-secrets/issues"
+  },
+  "homepage": "https://github.com/Drafteame/serverless-plugin-sync-secrets#readme",
+  "devDependencies": {
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "prettier": "^3.4.2"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1692.0",
+    "fs": "^0.0.1-security",
+    "@aws-sdk/client-secrets-manager": "^3.425.0",
+    "chalk": "^5.3.0",
+    "lodash": "^4.17.21"
+  }
+}
