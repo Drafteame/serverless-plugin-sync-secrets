@@ -1,6 +1,7 @@
 import fs from "fs";
 import SecretsManager from "./SecretsManager.js";
 import ChangeSet from "./ChangeSet.js";
+import logger from "./Logger.js";
 
 const defaultSkipPattern = "^_";
 
@@ -147,7 +148,7 @@ export default class SyncSecret {
    */
   async #createSecret() {
     if (this.#deleteSecretFlag || !this.#createSecretFlag) {
-      console.log("[SyncSecret] Secret creation skip...");  
+      logger.logInfo("Secret creation skip...");  
       return;
     }
 
