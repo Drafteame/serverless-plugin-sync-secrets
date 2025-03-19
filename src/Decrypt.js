@@ -1,34 +1,35 @@
 import fs from "fs";
 import util from "util";
 import cp from "child_process";
+import os from "os";
+import path from "path";
+import crypto from "crypto";
 import lodash from "lodash";
 import logger from "./Logger.js";
 
 export default class Decrypt {
   #filePath;
   #ejsonPrivateKey;
-  #outFile;
-  #profile;
-  #stage;
+  #ssm_prefix;
 
   /**
    * Create a new Decrypt instance.
-   *
+   * @param {Serverless} serverless The Serverless instance.
    * @param {string} filePath The path to the JSON file.
    * @param {string} privateKey Optional private key for encryption.
-   * @param {string} outFile Path to a destination file were the decrypted content should be placed.
-   */
+   * @param {string} ssm_prefix The SSM parameter name prefix for the private key.
+  */
   constructor(
-    filePath,
-    outFile,
-    privateKey = null
+    serverless,
+    filePath, 
+    privateKey,
+    ssm_prefix
   ) {
     this.exec = util.promisify(cp.exec);
+    this.provider = serverless.getProvider('aws');
     this.#filePath = filePath;
-    this.#outFile = outFile;
     this.#ejsonPrivateKey = privateKey;
-    this.#profile = process.env.AWS_PROFILE || "draftea-dev";
-    this.#stage = process.env.STAGE || "dev";
+    this.#ssm_prefix = ssm_prefix;
     this.#validateFilePath();
   }
 
@@ -37,14 +38,16 @@ export default class Decrypt {
    * @returns {Promise<Decrypt>} This instance for chaining
    * @throws {Error} If private key cannot be obtained
    */
-  async #init() {
-    this.#ejsonPrivateKey = process.env.EJSON_KEY || await this.#getEjsonPrivateKey();
-    if (lodash.isEmpty(this.#ejsonPrivateKey)) {
-      throw new Error("No provided private key for decryption");
+  async setEjsonPrivateKey() {
+    if (lodash.isNull(this.#ejsonPrivateKey) || lodash.isEmpty(this.#ejsonPrivateKey)) {
+      if (lodash.isNull(this.#ssm_prefix) || lodash.isEmpty(this.#ssm_prefix)) {
+        throw new Error("No provided private key for decryption and no SSM prefix provided");
+      }
+      this.#ejsonPrivateKey = await this.#getEjsonPrivateKey();
     }
     return this;
   }
-
+  
   /**
    * Validate the existence of the JSON file at the specified path and the private key.
    *
@@ -60,13 +63,11 @@ export default class Decrypt {
    * Run the decryption process.
    *
    * @throws {Error} If any step of the process fails
-   * @returns {Promise<void>}
+   * @returns {Promise<Object>} The decrypted JSON object
    */
     async run() {
-      await this.#init();
-
       await this.#checkEjsonInstalled();
-
+      await this.#ejsonPrivateKey();
       return await this.#decrypt();
     }
 
@@ -90,20 +91,38 @@ export default class Decrypt {
    *
    * @throws {Error} An execution error occurs during ejson command
    *
-   * @returns {Promise<void>}
+   * @returns {Promise<Object>} The decrypted JSON object
    */
   async #decrypt() {
     logger.logInfo('Decrypting secrets...');
-    const command = `echo ${this.#ejsonPrivateKey} | ejson decrypt ${this.#filePath} -o ${this.#outFile} --key-from-stdin`;
+    let tmpKeyFile = null;
 
-    const res = await this.exec(command);
-    const err = res.stderr.toString();
+    try{
+      const tmpdir = os.tmpdir();
+      tmpKeyFile = path.join(tmpdir, `${crypto.randomBytes(16).toString('hex')}`);
+      fs.writeFileSync(tmpKeyFile, this.#ejsonPrivateKey, { mode: 0o600 });
 
-    if (!lodash.isEmpty(err)) {
-      throw new Error(err);
+      const command = `ejson decrypt ${this.#filePath} --keydir ${tmpKeyFile}`;
+      const res = await this.exec(command);
+
+      const out = res.stdout.toString();
+      const err = res.stderr.toString();
+
+      if (!lodash.isEmpty(err)) {
+        throw new Error(err);
+      }
+
+      const secrets = JSON.parse(out);
+
+      logger.logInfo('Secrets decrypted successfully!');
+      return secrets;
+    } catch (error) {
+        throw new Error(`Error decrypting secrets: ${error.message}`);
+    } finally {
+      if (tmpKeyFile && fs.existsSync(tmpKeyFile)){
+        fs.unlinkSync(tmpKeyFile);
+      }
     }
-
-    logger.logInfo('Secrets decrypted successfully!');
   }
 
     /**
@@ -112,20 +131,23 @@ export default class Decrypt {
    * @throws {Error} If the key cannot be retrieved
    * @returns {Promise<string>} The private key
    */
-async #getEjsonPrivateKey() {
+  async #getEjsonPrivateKey() {
     try {
-        const command = `aws ssm get-parameter --name "/service/ejson/${this.#stage}/PRIVATE_KEY" --with-decryption --profile ${this.#profile} --output text --query Parameter.Value`;
-        const res = await this.exec(command);
-        const out = res.stdout.toString();
-        const err = res.stderr.toString();
+      const result = await this.provider.request('SSM', 'getParameter', {
+          Name: this.#ssm_prefix,
+          WithDecryption: true
+        });
 
-        if (!lodash.isEmpty(err)) {
-            throw new Error(err);
-        }
-        return out.trim();
+      const privateKey = result.Parameter.Value;
+
+      if (lodash.isEmpty(privateKey)) {
+        throw new Error("No provided private key for decryption");
+      }
+
+      return privateKey;        
     } catch (error) {
-        throw new Error(`Error al obtener la clave privada de AWS SSM: ${error.message}`);
+        throw new Error(`Error getting private key from SSM: ${error.message}`);
     }
-}
+  }
 
 }

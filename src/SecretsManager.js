@@ -1,29 +1,19 @@
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-  UpdateSecretCommand,
-  CreateSecretCommand,
-  ListSecretsCommand,
-  DeleteSecretCommand,
-} from "@aws-sdk/client-secrets-manager";
-
-import lodash from "lodash";
-
 /**
  * SecretsManager creates wrapped methods to execute actions over a configured
  * secrets manager instance.
  */
 export default class SecretsManager {
-  constructor(keyId, secretKey, region, secretName) {
-    this.secretName = secretName;
 
-    this.client = new SecretsManagerClient({
-      region: region,
-      credentials: {
-        accessKeyId: keyId,
-        secretAccessKey: secretKey,
-      },
-    });
+    /**
+   * Creates a new SecretsManager instance.
+   * 
+   * @param {Serverless} serverless The Serverless instance.
+   * @param {string} secretName The name of the secret in AWS Secrets Manager.
+   * 
+   */
+  constructor(serverless, secretName) {
+    this.secretName = secretName;
+    this.provider = serverless.getProvider("aws");
   }
 
   /**
@@ -31,12 +21,11 @@ export default class SecretsManager {
    *
    * @returns {Object}
    */
-  async getValues() {
-    const getSecretParams = { SecretId: this.secretName };
-    const getSecretCommand = new GetSecretValueCommand(getSecretParams);
-    const currentSecretValue = await this.client.send(getSecretCommand);
-
-    return JSON.parse(currentSecretValue.SecretString);
+  async getValues(){
+    const data = await this.provider.request('SecretsManager', 'getSecretValue', {
+      SecretId: this.secretName,
+    });
+    return JSON.parse(data.SecretString);
   }
 
   /**
@@ -45,17 +34,10 @@ export default class SecretsManager {
    * @param {Object} newValues Object with new values to replace existing ones on secrets manager
    */
   async update(newValues) {
-    if (lodash.isEmpty(newValues)) {
-      throw new Error("empty new secrets");
-    }
-
-    const updateSecretParams = {
-      SecretId: this.secretName,
-      SecretString: JSON.stringify(newValues),
-    };
-
-    const updateSecretCommand = new UpdateSecretCommand(updateSecretParams);
-    await this.client.send(updateSecretCommand);
+    await this.provider.request('SecretManager', 'updatesecret', {
+      SecretId: this.secretName, 
+      SecretString: JSON.stringify(newValues)
+    });
   }
 
   /**
@@ -64,7 +46,7 @@ export default class SecretsManager {
    * @returns {boolean}
    */
   async exists() {
-    const listCommand = new ListSecretsCommand({
+    const result = await this.provider.request('SecretsManager', 'listSecrets', {
       Filters: [
         {
           Key: "name",
@@ -73,15 +55,13 @@ export default class SecretsManager {
       ],
     });
 
-    const res = await this.client.send(listCommand);
-
-    if (res.SecretList.length === 0) {
+    if (result.SecretList.length === 0) {
       return false;
     }
 
     let exists = false;
 
-    res.SecretList.forEach((secret) => {
+    result.SecretList.forEach((secret) => {
       if (secret.Name === this.secretName) {
         exists = true;
       }
@@ -94,23 +74,19 @@ export default class SecretsManager {
    * Create the given secret name with a default value
    */
   async create() {
-    const createCommand = new CreateSecretCommand({
+    await this.provider.request('SecretsManager', 'createSecret', {
       Name: this.secretName,
       SecretString: JSON.stringify({ generated: true }),
     });
-
-    await this.client.send(createCommand);
   }
 
   /**
    * Delete the given secret name
    */
   async delete() {
-    const deleteCommand = new DeleteSecretCommand({
+    await this.provider.request('SecretsManger', 'deleteSecret', {
       SecretId: this.secretName,
-      RecoveryWindowInDays: 7,
-    });
-
-    await this.client.send(deleteCommand);
+      RecoverWindowInDays: 7,
+    })
   }
 }
