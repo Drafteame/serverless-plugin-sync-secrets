@@ -3,7 +3,7 @@ import util from "util";
 import cp from "child_process";
 import os from "os";
 import path from "path";
-import crypto from "crypto";
+import crypto, { privateDecrypt } from "crypto";
 import lodash from "lodash";
 import logger from "./Logger.js";
 
@@ -38,7 +38,7 @@ export default class Decrypt {
    * @returns {Promise<Decrypt>} This instance for chaining
    * @throws {Error} If private key cannot be obtained
    */
-  async setEjsonPrivateKey() {
+  async #setEjsonPrivateKey() {
     if (lodash.isNull(this.#ejsonPrivateKey) || lodash.isEmpty(this.#ejsonPrivateKey)) {
       if (lodash.isNull(this.#ssm_prefix) || lodash.isEmpty(this.#ssm_prefix)) {
         throw new Error("No provided private key for decryption and no SSM prefix provided");
@@ -67,7 +67,7 @@ export default class Decrypt {
    */
     async run() {
       await this.#checkEjsonInstalled();
-      await this.#ejsonPrivateKey();
+      await this.#setEjsonPrivateKey();
       return await this.#decrypt();
     }
 
@@ -78,6 +78,7 @@ export default class Decrypt {
    * @returns {Promise<boolean>} True if ejson is installed
    */
     async #checkEjsonInstalled() {
+        logger.logInfo('Checking if ejson is installed...');
         try {
             await this.exec('which ejson');
             return true;
@@ -95,14 +96,26 @@ export default class Decrypt {
    */
   async #decrypt() {
     logger.logInfo('Decrypting secrets...');
-    let tmpKeyFile = null;
+    let tmpKeyDir = null;
+    let privateKeyPath = null;
 
     try{
+      const ejsonContent = JSON.parse(fs.readFileSync(this.#filePath, 'utf8'));
+      const publicKey = ejsonContent?._public_key;
       const tmpdir = os.tmpdir();
-      tmpKeyFile = path.join(tmpdir, `${crypto.randomBytes(16).toString('hex')}`);
-      fs.writeFileSync(tmpKeyFile, this.#ejsonPrivateKey, { mode: 0o600 });
 
-      const command = `ejson decrypt ${this.#filePath} --keydir ${tmpKeyFile}`;
+      if (!publicKey) {
+        throw new Error('Could not find _public_key in the ejson file');
+      }
+
+      tmpKeyDir = path.join(tmpdir, `${crypto.randomBytes(16).toString('hex')}`);
+      fs.mkdirSync(tmpKeyDir, { mode: 0o700 }); 
+      
+      privateKeyPath = path.join(tmpKeyDir, publicKey);
+
+      fs.writeFileSync(privateKeyPath, this.#ejsonPrivateKey, { mode: 0o600 });
+
+      const command = `EJSON_KEYDIR="${tmpKeyDir}" ejson decrypt "${this.#filePath}"`;
       const res = await this.exec(command);
 
       const out = res.stdout.toString();
@@ -119,8 +132,9 @@ export default class Decrypt {
     } catch (error) {
         throw new Error(`Error decrypting secrets: ${error.message}`);
     } finally {
-      if (tmpKeyFile && fs.existsSync(tmpKeyFile)){
-        fs.unlinkSync(tmpKeyFile);
+      if (!lodash.isNull(tmpKeyDir) && fs.existsSync(tmpKeyDir)){
+        fs.unlinkSync(privateKeyPath);
+        fs.rmdirSync(tmpKeyDir);
       }
     }
   }
