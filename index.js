@@ -19,11 +19,11 @@ export default class SyncSecretPlugin {
       secret_name: this.serverless.service.service,
       ejson_key: null,
       ssm_prefix: null,
-      exclude: "^_",
+      exclude: '^_',
       create_secret: false,
       show_values: false,
       delete_secret: false,
-      dry: false
+      dry: false,
     };
     this.config = this.getConfig();
 
@@ -31,7 +31,7 @@ export default class SyncSecretPlugin {
       'before:package:initialize': async () => {
         await this.decryptSecrets();
         await this.syncSecretToSecretManager();
-      }
+      },
     };
   }
 

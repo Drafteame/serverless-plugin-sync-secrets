@@ -3,7 +3,7 @@ import util from "util";
 import cp from "child_process";
 import os from "os";
 import path from "path";
-import crypto, { privateDecrypt } from "crypto";
+import crypto from "crypto";
 import lodash from "lodash";
 import logger from "./Logger.js";
 
@@ -132,7 +132,7 @@ export default class Decrypt {
     } catch (error) {
         throw new Error(`Error decrypting secrets: ${error.message}`);
     } finally {
-      if (!lodash.isNull(tmpKeyDir) && fs.existsSync(tmpKeyDir)){
+      if (!lodash.isNull(tmpKeyDir) && fs.existsSync(tmpKeyDir) && fs.existsSync(privateKeyPath)) {
         fs.unlinkSync(privateKeyPath);
         fs.rmdirSync(tmpKeyDir);
       }

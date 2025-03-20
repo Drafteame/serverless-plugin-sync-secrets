@@ -78,7 +78,6 @@ export default class SyncSecret {
 
   /**
    * Runs the action to synchronize secrets by fetching existing secrets and creating a change set.
-   *
    * @returns {Promise<ChangeSet>} A promise that resolves to a ChangeSet instance representing the changes to be applied.
    */
   async run() {
@@ -119,7 +118,6 @@ export default class SyncSecret {
 
   /**
    * Validates input data, ensuring that required parameters are provided and the JSON file exists.
-   *
    * @param {string} secretName - The name of the secret in AWS Secrets Manager.
    * @throws {Error} Throws an error if any required parameter is missing or if the JSON file doesn't exist.
    */

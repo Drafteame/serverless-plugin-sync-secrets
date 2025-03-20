@@ -13,7 +13,7 @@ export default class SecretsManager {
    */
   constructor(serverless, secretName) {
     this.secretName = secretName;
-    this.provider = serverless.getProvider("aws");
+    this.provider = serverless.getProvider('aws');
   }
 
   /**
@@ -36,7 +36,7 @@ export default class SecretsManager {
   async update(newValues) {
     await this.provider.request('SecretsManager', 'updateSecret', {
       SecretId: this.secretName, 
-      SecretString: JSON.stringify(newValues)
+      SecretString: JSON.stringify(newValues),
     });
   }
 
@@ -84,9 +84,9 @@ export default class SecretsManager {
    * Delete the given secret name
    */
   async delete() {
-    await this.provider.request('SecretsManger', 'deleteSecret', {
+    await this.provider.request('SecretsManager', 'deleteSecret', {
       SecretId: this.secretName,
       RecoverWindowInDays: 7,
-    })
+    });
   }
 }
