@@ -1,7 +1,7 @@
 {
   "name": "serverless-plugin-sync-secrets",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Serverless plugin to sync secrets from AWS Secrets Manager to environment variables",
   "main": "index.js",
   "scripts": {
