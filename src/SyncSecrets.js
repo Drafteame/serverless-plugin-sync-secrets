@@ -62,9 +62,9 @@ export default class SyncSecret {
     secretName,
     secrets,
     skipPattern,
-    showValues = false,
-    createSecret = false,
-    deleteSecret = false,
+    showValues,
+    createSecret,
+    deleteSecret,
   ) {
     this.#validateData(secretName);
     this.#secrets = secrets;

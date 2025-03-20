@@ -34,7 +34,7 @@ export default class SecretsManager {
    * @param {Object} newValues Object with new values to replace existing ones on secrets manager
    */
   async update(newValues) {
-    await this.provider.request('SecretManager', 'updatesecret', {
+    await this.provider.request('SecretsManager', 'updateSecret', {
       SecretId: this.secretName, 
       SecretString: JSON.stringify(newValues)
     });

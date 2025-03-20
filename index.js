@@ -9,7 +9,8 @@ export default class SyncSecretPlugin {
     this.options = options || {};
     this.servicePath = this.serverless.config.servicePath || process.cwd();
     this.secrets = null;
-    this.stage = this.serverless.getStage(); 
+    this.provider = this.serverless.getProvider('aws');
+    this.stage = this.provider.getStage(); 
 
     logger.setServerless(serverless);
 
