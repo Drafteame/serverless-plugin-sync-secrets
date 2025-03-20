@@ -2,51 +2,29 @@ import SyncSecret from "./src/SyncSecrets.js";
 import Decrypt from "./src/Decrypt.js";
 import logger from "./src/Logger.js";
 import path from "path";
-import fs from "fs";
-import os from "os";
-import crypto from "crypto";
-import AWS from "aws-sdk";
-
-const stage = process.env.STAGE || 'dev';
-let credentials;
-try {
-  const profile = process.env.AWS_PROFILE || 'draftea-dev';
-  credentials = new AWS.SharedIniFileCredentials({ profile });
-} catch (error) {
-  logger.logInfo(`Profile ${profile} not found in ~/.aws/credentials`);
-  credentials = { accessKeyId: undefined, secretAccessKey: undefined };
-}
-const awsConfig = {
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID || credentials.accessKeyId,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || credentials.secretAccessKey,
-  region: process.env.AWS_REGION || 'us-east-2'
-};
 
 export default class SyncSecretPlugin {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options || {};
     this.servicePath = this.serverless.config.servicePath || process.cwd();
+    this.secrets = null;
+    this.provider = this.serverless.getProvider('aws');
+    this.stage = this.provider.getStage(); 
 
     logger.setServerless(serverless);
 
-    this.tempDir = this.#createTempDir();
-
     this.defaultConfig = {
-      aws_access_key_id: awsConfig.accessKeyId,
-      aws_secret_access_key: awsConfig.secretAccessKey,
-      aws_region: awsConfig.region,
+      ejson_file_path: path.join(this.servicePath, 'secrets', `${this.stage}.ejson`),
       secret_name: this.serverless.service.service,
-      exclude: "^_",
+      ejson_key: null,
+      ssm_prefix: null,
+      exclude: '^_',
       create_secret: false,
       show_values: false,
       delete_secret: false,
-      dry: false
+      dry: false,
     };
-
-    this.ejson_file_path = path.join(this.servicePath, 'secrets', `${stage}.ejson`);
-    this.decryptedFilePath = path.join(this.tempDir, `decrypted_${crypto.randomBytes(8).toString('hex')}.json`);
-
     this.config = this.getConfig();
 
     this.hooks = {
@@ -54,30 +32,7 @@ export default class SyncSecretPlugin {
         await this.decryptSecrets();
         await this.syncSecretToSecretManager();
       },
-      'after:package:initialize': async () => this.cleanupTempFiles()
     };
-
-    process.on('exit', this.cleanupTempFiles.bind(this));
-    process.on('SIGINT', () => {
-      this.cleanupTempFiles();
-      process.exit(1);
-    });
-  }
-
-  /**
-   * Creates a secure temporary directory with restricted permissions
-   * @returns {string} Path to the created temporary directory
-   */
-  #createTempDir() {
-    const baseTemp = os.tmpdir();
-    const uniqueDirName = `sls-secrets-${crypto.randomBytes(16).toString('hex')}`;
-    const tempDir = path.join(baseTemp, uniqueDirName);
-
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { mode: 0o700 });
-    }
-
-    return tempDir;
   }
 
   /**
@@ -87,12 +42,13 @@ export default class SyncSecretPlugin {
    */
   async decryptSecrets() {
     const decrypt = new Decrypt(
-      this.ejson_file_path, // file to decrypt
-      this.decryptedFilePath // decrypted file path
+      this.serverless,
+      this.config.ejson_file_path,
+      this.config.ejson_key,
+      this.config.ssm_prefix
     );
     try {
-      await decrypt.run();
-      fs.chmodSync(this.decryptedFilePath, 0o600);
+      this.secrets = await decrypt.run(); 
     } catch (e) {
       logger.logError(`Error decrypting secrets: ${e.message}`);
       throw e;
@@ -107,12 +63,14 @@ export default class SyncSecretPlugin {
   async syncSecretToSecretManager() {
     logger.logInfo('Starting secret sync process...');
 
+    if (!this.secrets) {
+      throw new Error('No secrets available. Make sure decryptSecrets() was called successfully.');
+    }
+
     const syncSecret = new SyncSecret(
-      this.config.aws_access_key_id,
-      this.config.aws_secret_access_key,
-      this.config.aws_region,
+      this.serverless,
       this.config.secret_name,
-      this.decryptedFilePath,
+      this.secrets,
       this.config.exclude,
       this.config.show_values,
       this.config.create_secret,
@@ -135,27 +93,7 @@ export default class SyncSecretPlugin {
       }
     } catch (e) {
       logger.logError(`Error syncing secrets: ${e.message}`);
-      throw new Error(e);
-    } finally {
-      this.cleanupTempFiles();
-    }
-  }
-
-  /**
-   * Deletes the temporary files and directories created during the process
-   */
-  cleanupTempFiles() {
-    try {
-      if (this.decryptedFilePath && fs.existsSync(this.decryptedFilePath)) {
-        fs.unlinkSync(this.decryptedFilePath);
-        logger.logInfo('Temporary file deleted');
-      }
-      if (this.tempDir && fs.existsSync(this.tempDir)) {
-        fs.rmdirSync(this.tempDir);
-        logger.logInfo('Temporary directory deleted');
-      }
-    } catch (e) {
-      logger.logError(`Error cleaning up temporary files: ${e.message}`);
+      throw e;
     }
   }
 
