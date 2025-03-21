@@ -1,6 +1,6 @@
-import SecretsManager from "./SecretsManager.js";
-import ChangeSet from "./ChangeSet.js";
-import logger from "./Logger.js";
+import SecretsManager from './SecretsManager.js';
+import ChangeSet from './ChangeSet.js';
+import logger from './Logger.js';
 
 /**
  * SyncSecret is a class representing an action to synchronize secrets with AWS Secrets Manager.
@@ -44,7 +44,7 @@ export default class SyncSecret {
 
   /**
    * Creates a new SyncSecret instance.
-   * 
+   *
    * @param {Serverless} serverless The Serverless instance.
    * @param {string} secretName The name of the secret in AWS Secrets Manager.
    * @param {Object} secrets The object containing the secret values.
@@ -57,15 +57,7 @@ export default class SyncSecret {
    *
    * @throws {Error} Throws an error if any required parameter is missing or if the JSON file doesn't exist.
    */
-  constructor(
-    serverless,
-    secretName,
-    secrets,
-    skipPattern,
-    showValues,
-    createSecret,
-    deleteSecret,
-  ) {
+  constructor(serverless, secretName, secrets, skipPattern, showValues, createSecret, deleteSecret) {
     this.#validateData(secretName);
     this.#secrets = secrets;
     this.#skipPattern = skipPattern;
@@ -96,7 +88,7 @@ export default class SyncSecret {
       existingSecretData,
       this.#skipPattern,
       this.#showValues,
-      this.#deleteSecretFlag,
+      this.#deleteSecretFlag
     );
   }
 
@@ -105,7 +97,7 @@ export default class SyncSecret {
    */
   async #createSecret() {
     if (this.#deleteSecretFlag || !this.#createSecretFlag) {
-      logger.logInfo("Secret creation skip...");  
+      logger.logInfo('Secret creation skip...');
       return;
     }
 
@@ -123,7 +115,7 @@ export default class SyncSecret {
    */
   #validateData(secretName) {
     if (!secretName) {
-      throw new Error("Missing secret_name");
+      throw new Error('Missing secret_name');
     }
   }
 }

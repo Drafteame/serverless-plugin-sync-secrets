@@ -3,13 +3,12 @@
  * secrets manager instance.
  */
 export default class SecretsManager {
-
-    /**
+  /**
    * Creates a new SecretsManager instance.
-   * 
+   *
    * @param {Serverless} serverless The Serverless instance.
    * @param {string} secretName The name of the secret in AWS Secrets Manager.
-   * 
+   *
    */
   constructor(serverless, secretName) {
     this.secretName = secretName;
@@ -21,7 +20,7 @@ export default class SecretsManager {
    *
    * @returns {Object}
    */
-  async getValues(){
+  async getValues() {
     const data = await this.provider.request('SecretsManager', 'getSecretValue', {
       SecretId: this.secretName,
     });
@@ -35,7 +34,7 @@ export default class SecretsManager {
    */
   async update(newValues) {
     await this.provider.request('SecretsManager', 'updateSecret', {
-      SecretId: this.secretName, 
+      SecretId: this.secretName,
       SecretString: JSON.stringify(newValues),
     });
   }
@@ -49,7 +48,7 @@ export default class SecretsManager {
     const result = await this.provider.request('SecretsManager', 'listSecrets', {
       Filters: [
         {
-          Key: "name",
+          Key: 'name',
           Values: [this.secretName],
         },
       ],
