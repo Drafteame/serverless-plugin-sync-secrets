@@ -1,13 +1,12 @@
-import lodash from "lodash";
-import chalk from "chalk";
-import SecretsManager from "./SecretsManager.js";
+import lodash from 'lodash';
+import chalk from 'chalk';
 
-const logPrefix = chalk.cyan("SecretKey");
-const skipTag = chalk.yellow("[SKIP]");
-const addedTag = chalk.green("[ADDED]");
-const changedTag = chalk.magenta("[CHANGED]");
-const removedTag = chalk.red("[REMOVED]");
-const valPlaceholder = "**********";
+const logPrefix = chalk.cyan('SecretKey');
+const skipTag = chalk.yellow('[SKIP]');
+const addedTag = chalk.green('[ADDED]');
+const changedTag = chalk.magenta('[CHANGED]');
+const removedTag = chalk.red('[REMOVED]');
+const valPlaceholder = '**********';
 
 /**
  * ChangeSet is a class that represents a set of changes to be applied to secrets in AWS Secrets Manager.
@@ -60,18 +59,11 @@ export default class ChangeSet {
    * @param {boolean} showValues A flag to un-hide secret values on log messages
    * @param {boolean} deleteSecret A flag to delete the secret
    */
-  constructor(
-    smClient,
-    newValues,
-    existingValues,
-    skipPattern,
-    showValues = false,
-    deleteSecret = false,
-  ) {
+  constructor(smClient, newValues, existingValues, skipPattern, showValues = false, deleteSecret = false) {
     this.#changeDesc = [];
     this.#updatedValues = { ...existingValues };
     this.#smClient = smClient;
-    this.#skipPattern = skipPattern || "";
+    this.#skipPattern = skipPattern || '';
     this.#showValues = showValues;
     this.#deleteSecret = deleteSecret;
 
@@ -109,7 +101,7 @@ export default class ChangeSet {
    */
   #eval(newValues, existingValues) {
     if (this.#deleteSecret) {
-      this.#removedDesc("ALL_KEYS");
+      this.#removedDesc('ALL_KEYS');
       return;
     }
 
@@ -207,8 +199,6 @@ export default class ChangeSet {
       newVal = valPlaceholder;
     }
 
-    this.#changeDesc.push(
-      `${logPrefix}: ${changedTag} '${key}': '${oldVal}' => '${newVal}'`,
-    );
+    this.#changeDesc.push(`${logPrefix}: ${changedTag} '${key}': '${oldVal}' => '${newVal}'`);
   }
 }

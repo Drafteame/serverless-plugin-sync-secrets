@@ -1,7 +1,7 @@
-import chalk from "chalk";
+import chalk from 'chalk';
 
 class Logger {
-  constructor(prefix = "SyncSecret") {
+  constructor(prefix = 'SyncSecret') {
     this.prefix = prefix;
     this.serverless = null;
   }
@@ -9,7 +9,7 @@ class Logger {
   setServerless(serverless) {
     this.serverless = serverless;
   }
-  
+
   /**
    * Print a plugin info log message
    *
@@ -19,7 +19,7 @@ class Logger {
     this.serverless.cli.consoleLog(`${chalk.cyan(this.prefix)}: ${message}`);
   }
 
-   /**
+  /**
    * Print a plugin error log message
    *
    * @param {string} message Log message

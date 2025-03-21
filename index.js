@@ -1,7 +1,7 @@
-import SyncSecret from "./src/SyncSecrets.js";
-import Decrypt from "./src/Decrypt.js";
-import logger from "./src/Logger.js";
-import path from "path";
+import SyncSecret from './src/SyncSecrets.js';
+import Decrypt from './src/Decrypt.js';
+import logger from './src/Logger.js';
+import path from 'path';
 
 export default class SyncSecretPlugin {
   constructor(serverless, options) {
@@ -10,7 +10,7 @@ export default class SyncSecretPlugin {
     this.servicePath = this.serverless.config.servicePath || process.cwd();
     this.secrets = null;
     this.provider = this.serverless.getProvider('aws');
-    this.stage = this.provider.getStage(); 
+    this.stage = this.provider.getStage();
 
     logger.setServerless(serverless);
 
@@ -48,7 +48,7 @@ export default class SyncSecretPlugin {
       this.config.ssm_prefix
     );
     try {
-      this.secrets = await decrypt.run(); 
+      this.secrets = await decrypt.run();
     } catch (e) {
       logger.logError(`Error decrypting secrets: ${e.message}`);
       throw e;
@@ -111,7 +111,7 @@ export default class SyncSecretPlugin {
       config = { ...config, ...service.custom.syncSecrets };
 
       const boolKeys = ['create_secret', 'delete_secret', 'show_values', 'dry'];
-      boolKeys.forEach(key => {
+      boolKeys.forEach((key) => {
         if (key in service.custom.syncSecrets) {
           logger.logInfo(`${key}: ${service.custom.syncSecrets[key]}`);
           config[key] = Boolean(service.custom.syncSecrets[key]);

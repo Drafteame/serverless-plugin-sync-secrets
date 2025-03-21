@@ -1,11 +1,11 @@
-import fs from "fs";
-import util from "util";
-import cp from "child_process";
-import os from "os";
-import path from "path";
-import crypto from "crypto";
-import lodash from "lodash";
-import logger from "./Logger.js";
+import fs from 'fs';
+import util from 'util';
+import cp from 'child_process';
+import os from 'os';
+import path from 'path';
+import crypto from 'crypto';
+import lodash from 'lodash';
+import logger from './Logger.js';
 
 export default class Decrypt {
   #filePath;
@@ -18,13 +18,8 @@ export default class Decrypt {
    * @param {string} filePath The path to the JSON file.
    * @param {string} privateKey Optional private key for encryption.
    * @param {string} ssm_prefix The SSM parameter name prefix for the private key.
-  */
-  constructor(
-    serverless,
-    filePath, 
-    privateKey,
-    ssm_prefix
-  ) {
+   */
+  constructor(serverless, filePath, privateKey, ssm_prefix) {
     this.exec = util.promisify(cp.exec);
     this.provider = serverless.getProvider('aws');
     this.#filePath = filePath;
@@ -41,13 +36,13 @@ export default class Decrypt {
   async #setEjsonPrivateKey() {
     if (lodash.isNull(this.#ejsonPrivateKey) || lodash.isEmpty(this.#ejsonPrivateKey)) {
       if (lodash.isNull(this.#ssm_prefix) || lodash.isEmpty(this.#ssm_prefix)) {
-        throw new Error("No provided private key for decryption and no SSM prefix provided");
+        throw new Error('No provided private key for decryption and no SSM prefix provided');
       }
       this.#ejsonPrivateKey = await this.#getEjsonPrivateKey();
     }
     return this;
   }
-  
+
   /**
    * Validate the existence of the JSON file at the specified path and the private key.
    *
@@ -65,27 +60,27 @@ export default class Decrypt {
    * @throws {Error} If any step of the process fails
    * @returns {Promise<Object>} The decrypted JSON object
    */
-    async run() {
-      await this.#checkEjsonInstalled();
-      await this.#setEjsonPrivateKey();
-      return await this.#decrypt();
-    }
+  async run() {
+    await this.#checkEjsonInstalled();
+    await this.#setEjsonPrivateKey();
+    return await this.#decrypt();
+  }
 
-   /**
+  /**
    * Checks if ejson is installed in the system.
-   * 
+   *
    * @throws {Error} If ejson is not installed
    * @returns {Promise<boolean>} True if ejson is installed
    */
-    async #checkEjsonInstalled() {
-        logger.logInfo('Checking if ejson is installed...');
-        try {
-            await this.exec('which ejson');
-            return true;
-        } catch (error) {
-            throw new Error('ejson command not found. Please install it first.');
-        }
+  async #checkEjsonInstalled() {
+    logger.logInfo('Checking if ejson is installed...');
+    try {
+      await this.exec('which ejson');
+      return true;
+    } catch {
+      throw new Error('ejson command not found. Please install it first.');
     }
+  }
 
   /**
    * Decrypt the JSON file using the ejson command and set the decrypted output.
@@ -99,7 +94,7 @@ export default class Decrypt {
     let tmpKeyDir = null;
     let privateKeyPath = null;
 
-    try{
+    try {
       const ejsonContent = JSON.parse(fs.readFileSync(this.#filePath, 'utf8'));
       const publicKey = ejsonContent?._public_key;
       const tmpdir = os.tmpdir();
@@ -109,8 +104,8 @@ export default class Decrypt {
       }
 
       tmpKeyDir = path.join(tmpdir, `${crypto.randomBytes(16).toString('hex')}`);
-      fs.mkdirSync(tmpKeyDir, { mode: 0o700 }); 
-      
+      fs.mkdirSync(tmpKeyDir, { mode: 0o700 });
+
       privateKeyPath = path.join(tmpKeyDir, publicKey);
 
       fs.writeFileSync(privateKeyPath, this.#ejsonPrivateKey, { mode: 0o600 });
@@ -130,7 +125,7 @@ export default class Decrypt {
       logger.logInfo('Secrets decrypted successfully!');
       return secrets;
     } catch (error) {
-        throw new Error(`Error decrypting secrets: ${error.message}`);
+      throw new Error(`Error decrypting secrets: ${error.message}`);
     } finally {
       if (!lodash.isNull(tmpKeyDir) && fs.existsSync(tmpKeyDir) && fs.existsSync(privateKeyPath)) {
         fs.unlinkSync(privateKeyPath);
@@ -139,29 +134,28 @@ export default class Decrypt {
     }
   }
 
-    /**
+  /**
    * Get the private key from AWS SSM Parameter Store
-   * 
+   *
    * @throws {Error} If the key cannot be retrieved
    * @returns {Promise<string>} The private key
    */
   async #getEjsonPrivateKey() {
     try {
       const result = await this.provider.request('SSM', 'getParameter', {
-          Name: this.#ssm_prefix,
-          WithDecryption: true
-        });
+        Name: this.#ssm_prefix,
+        WithDecryption: true,
+      });
 
       const privateKey = result.Parameter.Value;
 
       if (lodash.isEmpty(privateKey)) {
-        throw new Error("No provided private key for decryption");
+        throw new Error('No provided private key for decryption');
       }
 
-      return privateKey;        
+      return privateKey;
     } catch (error) {
-        throw new Error(`Error getting private key from SSM: ${error.message}`);
+      throw new Error(`Error getting private key from SSM: ${error.message}`);
     }
   }
-
 }
