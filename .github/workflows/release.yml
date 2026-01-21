@@ -61,6 +61,9 @@ jobs:
   npm_publish:
     name: Publish to NPM
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     needs:
       - bump_version
     steps:
@@ -80,9 +83,8 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Publish to NPM
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@v4
         with:
-          token: ${{ secrets.NPM_ACCESS_TOKEN }}
           access: public
           strategy: upgrade
 
