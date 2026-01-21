@@ -20,7 +20,7 @@ export default class SyncSecretPlugin {
       ejson_key: null,
       ssm_prefix: null,
       exclude: '^_',
-      create_secret: false,
+      create_secret: true,
       show_values: false,
       delete_secret: false,
       dry: false,
