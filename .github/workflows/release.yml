@@ -10,7 +10,6 @@ env:
   GIT_USER_NAME: ${{ secrets.GIT_NAME }}
 
 permissions:
-  id-token: write
   contents: write
 
 jobs:
@@ -62,6 +61,9 @@ jobs:
   npm_publish:
     name: Publish to NPM
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     needs:
       - bump_version
     steps:
@@ -82,6 +84,9 @@ jobs:
 
       - name: Publish to NPM
         uses: JS-DevTools/npm-publish@v4
+        with:
+          access: public
+          strategy: upgrade
 
   release:
     name: Release version
