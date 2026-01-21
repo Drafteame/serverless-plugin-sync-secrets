@@ -10,6 +10,7 @@ env:
   GIT_USER_NAME: ${{ secrets.GIT_NAME }}
 
 permissions:
+  id-token: write
   contents: write
 
 jobs:
@@ -80,11 +81,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Publish to NPM
-        uses: JS-DevTools/npm-publish@v3
-        with:
-          token: ${{ secrets.NPM_ACCESS_TOKEN }}
-          access: public
-          strategy: upgrade
+        uses: JS-DevTools/npm-publish@v4
 
   release:
     name: Release version
