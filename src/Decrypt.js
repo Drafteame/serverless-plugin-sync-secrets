@@ -9,7 +9,9 @@ import logger from './Logger.js';
 
 export default class Decrypt {
   #filePath;
+
   #ejsonPrivateKey;
+
   #ssm_prefix;
 
   /**
