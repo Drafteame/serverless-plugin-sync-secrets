@@ -64,18 +64,17 @@ custom:
 
 #### Configuration Options
 
-| Option            | Description |
-|------------------|-------------|
-| `ejson_file_path` | Path to the `EJSON` secrets file (default: `./secrets/{stage}.ejson`). |
-| `ejson_key` | The `EJSON` private key (optional if `ssm_prefix` is set). |
-| `ssm_prefix` | Prefix in `AWS SSM Parameter Store` to retrieve the `EJSON` private key (optional if `ejson_key` is provided). |
-| `secret_name` | Name of the secret in `AWS Secrets Manager` (default: service name). |
-| `exclude` | Regex pattern to exclude specific keys from synchronization (default: `'^_'`). |
-| `create_secret` | If `true`, creates the secret in AWS Secrets Manager if it does not exist (default: `false`). |
-| `show_values` | If `true`, shows the secret values in logs instead of markers (default: `false`). |
-| `delete_secret` | If `true`, deletes the secret instead of creating or updating it (default: `false`). |
-| `dry` | If `true`, runs in simulation mode without applying changes (default: `false`). |
-
+| Option            | Description                                                                                                    |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ejson_file_path` | Path to the `EJSON` secrets file (default: `./secrets/{stage}.ejson`).                                         |
+| `ejson_key`       | The `EJSON` private key (optional if `ssm_prefix` is set).                                                     |
+| `ssm_prefix`      | Prefix in `AWS SSM Parameter Store` to retrieve the `EJSON` private key (optional if `ejson_key` is provided). |
+| `secret_name`     | Name of the secret in `AWS Secrets Manager` (default: service name).                                           |
+| `exclude`         | Regex pattern to exclude specific keys from synchronization (default: `'^_'`).                                 |
+| `create_secret`   | If `true`, creates the secret in AWS Secrets Manager if it does not exist (default: `false`).                  |
+| `show_values`     | If `true`, shows the secret values in logs instead of markers (default: `false`).                              |
+| `delete_secret`   | If `true`, deletes the secret instead of creating or updating it (default: `false`).                           |
+| `dry`             | If `true`, runs in simulation mode without applying changes (default: `false`).                                |
 
 ## Execution
 
@@ -96,8 +95,8 @@ provider:
 custom:
   syncSecrets:
     ejson_file_path: ./secrets/${self:provider.stage}.ejson
-    ssm_prefix: "/ejson/keys/${self:provider.stage}/EJSON_KEY"
-    secret_name: "my-service"
+    ssm_prefix: '/ejson/keys/${self:provider.stage}/EJSON_KEY'
+    secret_name: 'my-service'
     create_secret: true
 
 plugins:

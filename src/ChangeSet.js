@@ -149,7 +149,7 @@ export default class ChangeSet {
       return false;
     }
 
-    let exp = new RegExp(this.#skipPattern);
+    const exp = new RegExp(this.#skipPattern);
 
     return exp.test(key);
   }

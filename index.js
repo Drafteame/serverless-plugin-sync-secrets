@@ -1,7 +1,7 @@
+import path from 'path';
 import SyncSecret from './src/SyncSecrets.js';
 import Decrypt from './src/Decrypt.js';
 import logger from './src/Logger.js';
-import path from 'path';
 
 export default class SyncSecretPlugin {
   constructor(serverless, options) {
@@ -76,7 +76,7 @@ export default class SyncSecretPlugin {
       this.config.create_secret,
       this.config.delete_secret
     );
-    const dry = this.config.dry;
+    const { dry } = this.config;
 
     try {
       logger.logInfo('Syncing secrets...');
@@ -105,7 +105,7 @@ export default class SyncSecretPlugin {
     logger.logInfo('Loading plugin configuration...');
 
     let config = { ...this.defaultConfig };
-    const service = this.serverless.service;
+    const { service } = this.serverless;
 
     if (service.custom && service.custom.syncSecrets) {
       config = { ...config, ...service.custom.syncSecrets };
