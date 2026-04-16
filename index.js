@@ -87,7 +87,9 @@ export default class SyncSecretPlugin {
         logger.logInfo(desc);
       }
 
-      if (!dry) {
+      if (dry) {
+        logger.logInfo('Dry mode enabled, skipping secrets sync.');
+      } else {
         await changeSet.apply();
         logger.logInfo('Secrets synced successfully!');
       }
@@ -113,8 +115,9 @@ export default class SyncSecretPlugin {
       const boolKeys = ['create_secret', 'delete_secret', 'show_values', 'dry'];
       boolKeys.forEach((key) => {
         if (key in service.custom.syncSecrets) {
-          logger.logInfo(`${key}: ${service.custom.syncSecrets[key]}`);
-          config[key] = Boolean(service.custom.syncSecrets[key]);
+          const val = service.custom.syncSecrets[key];
+          logger.logInfo(`${key}: ${val}`);
+          config[key] = val === true || String(val).toLowerCase() === 'true';
         }
       });
     }
